@@ -530,13 +530,8 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ==================== MAIN FUNCTION ====================
 
-def main():
-    """Start the bot"""
-    # Start Flask in separate thread
-    flask_thread = threading.Thread(target=run_flask)
-    flask_thread.daemon = True
-    flask_thread.start()
-    
+async def run_bot():
+    """Run the bot with asyncio"""
     # Create application
     application = Application.builder().token(BOT_TOKEN).build()
     
@@ -550,7 +545,28 @@ def main():
     
     # Start bot
     logger.info("Starting bot...")
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+    
+    # Keep running
+    while True:
+        await asyncio.sleep(3600)
+
+def main():
+    """Start the bot"""
+    # Start Flask in separate thread
+    flask_thread = threading.Thread(target=run_flask)
+    flask_thread.daemon = True
+    flask_thread.start()
+    
+    # Run bot with asyncio
+    try:
+        asyncio.run(run_bot())
+    except KeyboardInterrupt:
+        logger.info("Bot stopped by user")
+    except Exception as e:
+        logger.error(f"Bot error: {e}")
 
 if __name__ == '__main__':
     main()
